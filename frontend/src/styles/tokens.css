@@ -1,0 +1,55 @@
+/* ==========================================================================
+   CONSIGNLY — Design Tokens
+   Concept: a working cargo/manifest console, not a marketing page. Dark
+   "warehouse board" chrome (navigation, headers) holds light "paper" work
+   surfaces (tables, forms) — like a dispatch office where the manifest
+   board is dark slate and the paperwork on the desk is bright.
+   ========================================================================== */
+:root {
+  /* --- Core palette --- */
+  --ink-900: #0d1526;      /* deepest chrome background */
+  --ink-800: #142042;      /* sidebar / header background */
+  --ink-700: #1c2b52;      /* raised chrome surfaces, hover */
+  --ink-600: #2a3b6b;      /* borders on dark chrome */
+
+  --paper-0: #fbfaf7;      /* app content background (warm paper white) */
+  --paper-50: #f3f1ea;     /* subtle panel fill on paper */
+  --paper-100: #e9e5d8;    /* borders on paper */
+  --paper-ink: #1a1f2c;    /* primary text on paper */
+  --paper-ink-soft: #5b6072; /* secondary text on paper */
+
+  --amber-500: #e8a33d;    /* primary accent — consignment tag amber */
+  --amber-600: #cc8a26;
+  --amber-100: #fbe8c8;
+
+  --teal-500: #2f7a6f;     /* delivered / success */
+  --teal-100: #dcefe9;
+
+  --rust-500: #c0503b;     /* failed / danger — warm rust, not the generic terracotta */
+  --rust-100: #f6e0da;
+
+  --slate-500: #6b7690;    /* neutral / placed / pending */
+  --slate-100: #e8eaf0;
+
+  /* --- Type --- */
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* --- Spacing scale --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* --- Radius / shadow --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-card: 0 1px 2px rgba(13, 21, 38, 0.06), 0 4px 16px rgba(13, 21, 38, 0.06);
+  --shadow-raised: 0 8px 24px rgba(13, 21, 38, 0.14);
+}
