@@ -61,6 +61,22 @@ auto-assignment "widen search" fallback described in SYSTEM_DESIGN.md).
 ## 2. Deploying (Render / Railway / Vercel or similar)
 
 The app is two independently-deployable services.
+> ## 🔗 Live Demo & Quick Access
+> **Live app:** https://consignly.vercel.app
+> **Backend API:** https://consignly.onrender.com/api/health 
+>
+> **Demo logins** (password for all: `password123`)
+> | Role | Email |
+> |---|---|
+> | Admin | `admin@lastmile.com` |
+> | Agent | `agent1@lastmile.com` |
+> | Customer | `customer@lastmile.com` |
+>
+> ⚠️ Backend is on Render's free tier — it sleeps after ~15 min idle. First request after that may take 30–50 seconds to wake up. This is expected, not a bug.
+>
+> **Suggested demo flow:** log in as customer → place an order (pickup `110001`, drop `560001`) → log in as admin → auto-assign the order → log in as the assigned agent → progress it through Picked Up → In Transit → Delivered → log back in as customer to see the tracking timeline update.
+
+---
 
 ### Backend (Render / Railway)
 
