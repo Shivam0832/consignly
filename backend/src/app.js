@@ -8,6 +8,7 @@ const zoneRoutes = require("./routes/zone.routes");
 const rateCardRoutes = require("./routes/rateCard.routes");
 const orderRoutes = require("./routes/order.routes");
 const adminRoutes = require("./routes/admin.routes");
+const trackRoutes = require("./routes/track.routes");
 
 const app = express();
 
@@ -38,6 +39,13 @@ const authLimiter = rateLimit({
 });
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);
+
+// Public tracking: limit guessing of tracking numbers.
+app.use(
+  "/api/track",
+  rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false, message: { error: "Too many lookups. Try again in a minute." } }),
+  trackRoutes
+);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/zones", zoneRoutes);

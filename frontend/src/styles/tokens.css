@@ -1,55 +1,139 @@
 /* ==========================================================================
-   CONSIGNLY — Design Tokens
-   Concept: a working cargo/manifest console, not a marketing page. Dark
-   "warehouse board" chrome (navigation, headers) holds light "paper" work
-   surfaces (tables, forms) — like a dispatch office where the manifest
-   board is dark slate and the paperwork on the desk is bright.
+   CONSIGNLY — design tokens
+   Concept: the waybill. Ink-dark dispatch chrome around cool paper work
+   surfaces; parcel-tape yellow marks the one action that matters on a
+   screen; route blue shows movement. Codes (order numbers, pincodes) are
+   the only thing set in mono, because they are codes.
    ========================================================================== */
 :root {
-  /* --- Core palette --- */
-  --ink-900: #0d1526;      /* deepest chrome background */
-  --ink-800: #142042;      /* sidebar / header background */
-  --ink-700: #1c2b52;      /* raised chrome surfaces, hover */
-  --ink-600: #2a3b6b;      /* borders on dark chrome */
+  color-scheme: light;
 
-  --paper-0: #fbfaf7;      /* app content background (warm paper white) */
-  --paper-50: #f3f1ea;     /* subtle panel fill on paper */
-  --paper-100: #e9e5d8;    /* borders on paper */
-  --paper-ink: #1a1f2c;    /* primary text on paper */
-  --paper-ink-soft: #5b6072; /* secondary text on paper */
+  /* Ink — text */
+  --ink: #14182b;
+  --ink-2: #3b4157;
+  --ink-3: #6b7189;
 
-  --amber-500: #e8a33d;    /* primary accent — consignment tag amber */
-  --amber-600: #cc8a26;
-  --amber-100: #fbe8c8;
+  /* Paper — surfaces */
+  --paper: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+  --line: #e3e7ee;
+  --line-strong: #cdd3de;
 
-  --teal-500: #2f7a6f;     /* delivered / success */
-  --teal-100: #dcefe9;
+  /* Tape — the primary action */
+  --tape: #ffc83d;
+  --tape-strong: #f2b200;
+  --tape-ink: #14182b;
+  --tape-soft: #fff4d1;
 
-  --rust-500: #c0503b;     /* failed / danger — warm rust, not the generic terracotta */
-  --rust-100: #f6e0da;
+  /* Route — movement, links, progress */
+  --route: #2e5be8;
+  --route-soft: #e8eeff;
 
-  --slate-500: #6b7690;    /* neutral / placed / pending */
-  --slate-100: #e8eaf0;
+  /* States */
+  --ok: #1c9a68;
+  --ok-soft: #e3f5ec;
+  --bad: #d8463b;
+  --bad-soft: #fce9e7;
+  --wait: #5d647c;
+  --wait-soft: #eef0f5;
 
-  /* --- Type --- */
-  --font-display: "Space Grotesk", "Inter", sans-serif;
-  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  /* Dispatch chrome (sidebar) — dark in both themes */
+  --chrome: #14182b;
+  --chrome-2: #1e2338;
+  --chrome-line: #2a3049;
+  --chrome-ink: #c4c9da;
+  --chrome-ink-strong: #ffffff;
 
-  /* --- Spacing scale --- */
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 24px;
-  --sp-6: 32px;
-  --sp-7: 48px;
-  --sp-8: 64px;
+  /* Type */
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", "Figtree Variable", system-ui, sans-serif;
+  --font-ui: "Figtree Variable", "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-code: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
 
-  /* --- Radius / shadow --- */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --shadow-card: 0 1px 2px rgba(13, 21, 38, 0.06), 0 4px 16px rgba(13, 21, 38, 0.06);
-  --shadow-raised: 0 8px 24px rgba(13, 21, 38, 0.14);
+  /* Scale (px): 12 13 14 15 18 22 28 40 56 */
+  --t-xs: 12px;
+  --t-sm: 13px;
+  --t-md: 14px;
+  --t-body: 15px;
+  --t-lg: 18px;
+  --t-xl: 22px;
+  --t-2xl: 28px;
+  --t-3xl: 40px;
+  --t-4xl: 56px;
+
+  /* Space */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 72px;
+
+  /* Shape: inputs tighter than cards, pills fully round */
+  --r-input: 10px;
+  --r-card: 16px;
+  --r-sheet: 22px;
+  --r-pill: 999px;
+
+  --shadow-1: 0 1px 2px rgba(20, 24, 43, 0.06);
+  --shadow-2: 0 18px 40px -18px rgba(20, 24, 43, 0.28);
+  --focus: 0 0 0 3px rgba(46, 91, 232, 0.35);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #eceef5;
+  --ink-2: #b6bbcd;
+  --ink-3: #8a90a8;
+  --paper: #0e1120;
+  --surface: #161a2b;
+  --surface-2: #1b2033;
+  --line: #262c43;
+  --line-strong: #353c58;
+  --tape-soft: rgba(255, 200, 61, 0.14);
+  --route: #7b9bff;
+  --route-soft: rgba(123, 155, 255, 0.14);
+  --ok: #3ccb93;
+  --ok-soft: rgba(60, 203, 147, 0.14);
+  --bad: #ff7468;
+  --bad-soft: rgba(255, 116, 104, 0.14);
+  --wait: #a3a9c0;
+  --wait-soft: rgba(163, 169, 192, 0.14);
+  --chrome: #0a0c17;
+  --chrome-2: #151a2c;
+  --chrome-line: #212741;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  --focus: 0 0 0 3px rgba(123, 155, 255, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ink: #eceef5;
+    --ink-2: #b6bbcd;
+    --ink-3: #8a90a8;
+    --paper: #0e1120;
+    --surface: #161a2b;
+    --surface-2: #1b2033;
+    --line: #262c43;
+    --line-strong: #353c58;
+    --tape-soft: rgba(255, 200, 61, 0.14);
+    --route: #7b9bff;
+    --route-soft: rgba(123, 155, 255, 0.14);
+    --ok: #3ccb93;
+    --ok-soft: rgba(60, 203, 147, 0.14);
+    --bad: #ff7468;
+    --bad-soft: rgba(255, 116, 104, 0.14);
+    --wait: #a3a9c0;
+    --wait-soft: rgba(163, 169, 192, 0.14);
+    --chrome: #0a0c17;
+    --chrome-2: #151a2c;
+    --chrome-line: #212741;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+    --focus: 0 0 0 3px rgba(123, 155, 255, 0.45);
+  }
 }

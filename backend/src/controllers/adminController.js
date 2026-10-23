@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const { Op } = require("sequelize");
 const { User, Order, Zone } = require("../models");
 const { ROLES } = require("../utils/constants");
 const { publicUser, normalizeEmail, MIN_PASSWORD } = require("./authController");
@@ -91,7 +92,29 @@ async function dashboardStats(req, res) {
   const statusCounts = {};
   statusRows.forEach((row) => (statusCounts[row.status] = Number(row.count)));
 
-  res.json({ totalOrders, statusCounts, totalAgents, availableAgents, totalCustomers });
+  // Last 14 days (UTC), oldest first: orders booked and revenue per day.
+  const DAYS = 14;
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - (DAYS - 1));
+  const recent = await Order.findAll({
+    where: { createdAt: { [Op.gte]: start } },
+    attributes: ["createdAt", "status", "totalCharge"],
+    raw: true,
+  });
+  const daily = Array.from({ length: DAYS }, (_, i) => {
+    const d = new Date(start);
+    d.setUTCDate(start.getUTCDate() + i);
+    return { date: d.toISOString().slice(0, 10), orders: 0, revenue: 0 };
+  });
+  for (const o of recent) {
+    const day = daily.find((d) => d.date === new Date(o.createdAt).toISOString().slice(0, 10));
+    if (!day) continue;
+    day.orders += 1;
+    if (o.status !== "CANCELLED") day.revenue = Math.round((day.revenue + Number(o.totalCharge)) * 100) / 100;
+  }
+
+  res.json({ totalOrders, statusCounts, totalAgents, availableAgents, totalCustomers, daily });
 }
 
 module.exports = { createUser, listUsers, updateAgentStatus, dashboardStats };

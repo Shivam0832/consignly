@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { BrandMark } from "../components/Layout";
+import AuthShell from "../components/AuthShell";
+import PasswordInput from "../components/PasswordInput";
 
 export default function Register() {
   const { register } = useAuth();
@@ -9,10 +10,7 @@ export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-
-  function set(k, v) {
-    setForm((f) => ({ ...f, [k]: v }));
-  }
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -20,7 +18,7 @@ export default function Register() {
     setBusy(true);
     try {
       await register(form);
-      navigate("/customer");
+      navigate("/customer/new");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -29,45 +27,36 @@ export default function Register() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-brand">
-          <BrandMark />
-          Consignly
+    <AuthShell>
+      <h1>Create your account</h1>
+      <p>Book your first delivery in under a minute.</p>
+
+      {error && <div className="notice notice-bad" role="alert">{error}</div>}
+
+      <form onSubmit={handleSubmit}>
+        <div className="field">
+          <label htmlFor="r-name">Full name</label>
+          <input id="r-name" autoComplete="name" value={form.name} onChange={set("name")} required autoFocus />
         </div>
-        <p className="text-soft" style={{ marginBottom: 16, fontSize: 13.5 }}>
-          Create a customer account to place and track deliveries.
-        </p>
-
-        {error && <div className="banner banner-error" role="alert">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="field">
-            <label htmlFor="r-name">Full name</label>
-            <input id="r-name" autoComplete="name" value={form.name} onChange={(e) => set("name", e.target.value)} required autoFocus />
-          </div>
-          <div className="field">
-            <label htmlFor="r-email">Email</label>
-            <input id="r-email" autoComplete="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required />
-          </div>
-          <div className="field">
-            <label htmlFor="r-phone">Phone (for SMS updates)</label>
-            <input id="r-phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="9876543210" />
-          </div>
-          <div className="field">
-            <label htmlFor="r-pass">Password</label>
-            <input id="r-pass" type="password" autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} required minLength={8} />
-            <span className="field-hint">At least 8 characters.</span>
-          </div>
-          <button className="btn btn-accent btn-block" type="submit" disabled={busy}>
-            {busy ? "Creating account…" : "Create account"}
-          </button>
-        </form>
-
-        <div className="auth-switch">
-          Already have an account? <Link to="/login">Sign in</Link>
+        <div className="field">
+          <label htmlFor="r-email">Email</label>
+          <input id="r-email" type="email" autoComplete="email" value={form.email} onChange={set("email")} required />
         </div>
-      </div>
-    </div>
+        <div className="field">
+          <label htmlFor="r-phone">Mobile number</label>
+          <input id="r-phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set("phone")} placeholder="For SMS delivery updates" />
+        </div>
+        <div className="field">
+          <label htmlFor="r-pass">Password</label>
+          <PasswordInput id="r-pass" autoComplete="new-password" minLength={8} value={form.password} onChange={set("password")} />
+          <span className="hint">At least 8 characters.</span>
+        </div>
+        <button className="btn btn-dark btn-lg btn-block" type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</button>
+      </form>
+
+      <p style={{ marginTop: 18, fontSize: 14 }} className="muted">
+        Already have an account? <Link to="/login">Sign in</Link>
+      </p>
+    </AuthShell>
   );
 }

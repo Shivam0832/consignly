@@ -174,3 +174,24 @@ test("rate cards reject non-numeric charges", async () => {
   const r = await api.post("/api/rate-cards").set(as("admin")).send({ orderType: "B2C", zoneType: "INTRA", baseCharge: "abc", ratePerKg: 10 });
   assert.equal(r.status, 400);
 });
+
+test("public tracking shows status and route but no personal details", async () => {
+  const { body } = await newOrder();
+  const r = await api.get(`/api/track/${body.order.orderNumber.toLowerCase()}`);
+  assert.equal(r.status, 200);
+  const t = r.body.tracking;
+  assert.equal(t.status, "PLACED");
+  assert.equal(t.dropZone.name, "South");
+  const json = JSON.stringify(t);
+  for (const secret of ["1 Main St", "customer@test.com", "Customer", "note", "actorId"]) {
+    assert.ok(!json.includes(secret), `leaked ${secret}`);
+  }
+  assert.equal((await api.get("/api/track/LM-NOPE-0000")).status, 404);
+  assert.equal((await api.get("/api/track/hello")).status, 400);
+});
+
+test("admin stats include 14 days of daily orders", async () => {
+  const r = await api.get("/api/admin/stats").set(as("admin"));
+  assert.equal(r.body.daily.length, 14);
+  assert.ok(r.body.daily.at(-1).orders >= 1);
+});

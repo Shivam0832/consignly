@@ -1,43 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { PackagePlus } from "lucide-react";
 import Layout from "../../components/Layout";
 import StatusBadge from "../../components/StatusBadge";
+import RouteCell from "../../components/RouteCell";
+import Empty from "../../components/Empty";
 import useRowLink from "../../components/useRowLink";
 import { api } from "../../api/client";
-import { TERMINAL, money } from "../../lib/orderStatus";
-
-function OrdersTable({ orders, rowLink }) {
-  return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Order #</th><th>Route</th><th>Type</th><th>Payment</th><th>Charge</th><th>Status</th><th>Placed</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((o) => (
-            <tr key={o.id} {...rowLink(`/orders/${o.id}`)}>
-              <td className="mono">{o.orderNumber}</td>
-              <td>{o.pickupZone?.name} &rarr; {o.dropZone?.name}</td>
-              <td>{o.orderType}</td>
-              <td>{o.paymentType === "COD" ? "COD" : "Prepaid"}</td>
-              <td className="mono">{money(o.totalCharge)}</td>
-              <td><StatusBadge status={o.status} /></td>
-              <td className="text-soft">{new Date(o.createdAt).toLocaleDateString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+import { TERMINAL, money, relative } from "../../lib/orderStatus";
 
 export default function CustomerOrders() {
   const rowLink = useRowLink();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState("active");
 
   useEffect(() => {
     api.get("/orders").then((d) => setOrders(d.orders)).catch((e) => setError(e.message)).finally(() => setLoading(false));
@@ -45,32 +22,55 @@ export default function CustomerOrders() {
 
   const active = orders.filter((o) => !TERMINAL.includes(o.status));
   const past = orders.filter((o) => TERMINAL.includes(o.status));
+  const shown = tab === "active" ? active : past;
+  const failed = active.filter((o) => o.status === "FAILED");
 
   return (
-    <Layout
-      title="My Orders"
-      subtitle="Every shipment you've placed, with live status"
-      actions={<Link to="/customer/new" className="btn btn-accent">+ New order</Link>}
-    >
-      {error && <div className="banner banner-error" role="alert">{error}</div>}
+    <Layout title="My orders" subtitle="Everything you've sent, newest first." actions={<Link to="/customer/new" className="btn btn-primary"><PackagePlus aria-hidden="true" />Book a delivery</Link>}>
+      {error && <div className="notice notice-bad" role="alert">{error}</div>}
+      {failed.length > 0 && (
+        <div className="notice notice-bad">
+          <span className="grow">{failed.length === 1 ? "A delivery attempt failed." : `${failed.length} delivery attempts failed.`} Pick a new date to try again.</span>
+          <Link to={`/orders/${failed[0].id}`}>Reschedule</Link>
+        </div>
+      )}
 
       {loading ? (
-        <div className="card"><div className="skeleton" style={{ height: 120 }} /></div>
+        <div className="skeleton" style={{ height: 220, borderRadius: 16 }} />
       ) : orders.length === 0 ? (
-        <div className="card empty-state">
-          <h3>No orders yet</h3>
-          <p>Place your first order to see it tracked here.</p>
-          <Link to="/customer/new" className="btn btn-accent" style={{ marginTop: 16 }}>Place an order</Link>
+        <div className="card">
+          <Empty title="No deliveries yet" action={<Link to="/customer/new" className="btn btn-primary">Book your first delivery</Link>}>
+            Book a delivery and you'll be able to follow it here, step by step.
+          </Empty>
         </div>
       ) : (
         <>
-          <h2 className="section-title">In progress <span className="count">{active.length}</span></h2>
-          {active.length ? <OrdersTable orders={active} rowLink={rowLink} /> : <p className="text-soft section-empty">Nothing on the move right now.</p>}
-          {past.length > 0 && (
-            <>
-              <h2 className="section-title">Completed & cancelled <span className="count">{past.length}</span></h2>
-              <OrdersTable orders={past} rowLink={rowLink} />
-            </>
+          <div className="tabs" role="group" aria-label="Filter orders">
+            <button aria-pressed={tab === "active"} onClick={() => setTab("active")}>In progress<span className="count">{active.length}</span></button>
+            <button aria-pressed={tab === "past"} onClick={() => setTab("past")}>Completed<span className="count">{past.length}</span></button>
+          </div>
+          {shown.length === 0 ? (
+            <div className="card"><Empty title={tab === "active" ? "Nothing on the move" : "Nothing completed yet"} /></div>
+          ) : (
+            <div className="card card-flush">
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr><th>Order</th><th>Route</th><th>Status</th><th className="num">Charge</th></tr>
+                  </thead>
+                  <tbody>
+                    {shown.map((o) => (
+                      <tr key={o.id} {...rowLink(`/orders/${o.id}`)}>
+                        <td><div className="cell-main code">{o.orderNumber}</div><div className="cell-sub">{relative(o.createdAt)}</div></td>
+                        <td><RouteCell order={o} /></td>
+                        <td><StatusBadge status={o.status} /></td>
+                        <td className="num"><span className="cell-main">{money(o.totalCharge)}</span><div className="cell-sub">{o.paymentType === "COD" ? "Cash on delivery" : "Prepaid"}</div></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </>
       )}
