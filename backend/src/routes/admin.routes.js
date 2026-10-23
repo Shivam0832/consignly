@@ -1,7 +1,8 @@
 const router = require("express").Router();
 const { authenticate, authorize } = require("../middleware/auth");
 const { ROLES } = require("../utils/constants");
-const ctrl = require("../controllers/adminController");
+const { wrapAll } = require("../utils/asyncHandler");
+const ctrl = wrapAll(require("../controllers/adminController"));
 
 router.use(authenticate);
 

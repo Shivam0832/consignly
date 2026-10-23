@@ -1,7 +1,8 @@
 const router = require("express").Router();
 const { authenticate, authorize } = require("../middleware/auth");
 const { ROLES } = require("../utils/constants");
-const ctrl = require("../controllers/orderController");
+const { wrapAll } = require("../utils/asyncHandler");
+const ctrl = wrapAll(require("../controllers/orderController"));
 
 router.use(authenticate);
 
@@ -14,5 +15,6 @@ router.post("/:id/assign", authorize(ROLES.ADMIN), ctrl.manualAssign);
 router.post("/:id/auto-assign", authorize(ROLES.ADMIN), ctrl.autoAssignEndpoint);
 router.patch("/:id/status", authorize(ROLES.ADMIN, ROLES.AGENT), ctrl.updateStatus);
 router.post("/:id/reschedule", authorize(ROLES.ADMIN, ROLES.CUSTOMER), ctrl.reschedule);
+router.post("/:id/cancel", authorize(ROLES.ADMIN, ROLES.CUSTOMER), ctrl.cancelOrder);
 
 module.exports = router;

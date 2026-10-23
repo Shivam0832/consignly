@@ -1,5 +1,6 @@
 const router = require("express").Router();
-const { register, login, me } = require("../controllers/authController");
+const { wrapAll } = require("../utils/asyncHandler");
+const { register, login, me } = wrapAll(require("../controllers/authController"));
 const { authenticate } = require("../middleware/auth");
 
 router.post("/register", register);

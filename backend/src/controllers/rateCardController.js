@@ -17,8 +17,12 @@ async function upsertRateCard(req, res) {
   if (!Object.values(ZONE_TYPES).includes(zoneType)) {
     return res.status(400).json({ error: `zoneType must be one of ${Object.values(ZONE_TYPES).join(", ")}` });
   }
-  if (ratePerKg === undefined || Number(ratePerKg) < 0) {
+  const isMoney = (v) => v !== undefined && v !== null && v !== "" && Number.isFinite(Number(v)) && Number(v) >= 0;
+  if (!isMoney(ratePerKg)) {
     return res.status(400).json({ error: "ratePerKg must be a non-negative number" });
+  }
+  if (baseCharge !== undefined && baseCharge !== "" && !isMoney(baseCharge)) {
+    return res.status(400).json({ error: "baseCharge must be a non-negative number" });
   }
 
   let rateCard = await RateCard.findOne({ where: { orderType, zoneType } });
@@ -47,8 +51,11 @@ async function upsertCodSurcharge(req, res) {
   if (!Object.values(SURCHARGE_TYPES).includes(type)) {
     return res.status(400).json({ error: `type must be one of ${Object.values(SURCHARGE_TYPES).join(", ")}` });
   }
-  if (value === undefined || Number(value) < 0) {
+  if (value === undefined || value === null || value === "" || !Number.isFinite(Number(value)) || Number(value) < 0) {
     return res.status(400).json({ error: "value must be a non-negative number" });
+  }
+  if (type === "PERCENT" && Number(value) > 100) {
+    return res.status(400).json({ error: "A percentage surcharge cannot exceed 100" });
   }
 
   let codSurcharge = await CodSurcharge.findOne({ where: { orderType } });
