@@ -52,8 +52,11 @@ export default function Zones() {
     }
   }
 
-  async function handleRemoveArea(id) {
+  async function handleRemoveArea(area) {
+    if (!window.confirm(`Unmap pincode ${area.pincode}? New orders to it can't be quoted until it's mapped again.`)) return;
+    const id = area.id;
     setBusy(true);
+    setError(""); setNotice("");
     try {
       await api.del(`/zones/areas/${id}`);
       await load();
@@ -64,11 +67,14 @@ export default function Zones() {
     }
   }
 
-  async function handleDeleteZone(id) {
+  async function handleDeleteZone(zone) {
+    if (!window.confirm(`Delete ${zone.name}?`)) return;
+    const id = zone.id;
     setBusy(true);
-    setError("");
+    setError(""); setNotice("");
     try {
       await api.del(`/zones/${id}`);
+      setNotice(`${zone.name} deleted.`);
       await load();
     } catch (err) {
       setError(err.message);
@@ -79,23 +85,23 @@ export default function Zones() {
 
   return (
     <Layout title="Zones & Areas" subtitle="Define delivery zones and map pincodes to them — this drives zone detection for every order">
-      {error && <div className="banner banner-error">{error}</div>}
+      {error && <div className="banner banner-error" role="alert">{error}</div>}
       {notice && <div className="banner banner-success">{notice}</div>}
 
       <div className="grid grid-2" style={{ alignItems: "start", marginBottom: 20 }}>
         <form className="card" onSubmit={handleCreateZone}>
           <div className="card-title">Create a zone</div>
-          <div className="flex gap-2">
-            <input value={newZoneName} onChange={(e) => setNewZoneName(e.target.value)} placeholder="e.g. West Zone" required style={{ flex: 1, padding: 10, borderRadius: 6, border: "1.5px solid var(--paper-100)" }} />
+          <div className="inline-form">
+            <input className="input" aria-label="Zone name" value={newZoneName} onChange={(e) => setNewZoneName(e.target.value)} placeholder="e.g. West Zone" required />
             <button className="btn btn-accent btn-sm" type="submit" disabled={busy}>Create</button>
           </div>
         </form>
 
         <form className="card" onSubmit={handleAssignArea}>
           <div className="card-title">Map a pincode to a zone</div>
-          <div className="flex gap-2">
-            <input value={pincode} onChange={(e) => setPincode(e.target.value)} placeholder="Pincode" required style={{ width: 130, padding: 10, borderRadius: 6, border: "1.5px solid var(--paper-100)" }} />
-            <select value={zoneForPincode} onChange={(e) => setZoneForPincode(e.target.value)} required style={{ flex: 1, padding: 10, borderRadius: 6, border: "1.5px solid var(--paper-100)" }}>
+          <div className="inline-form">
+            <input className="input pin-input" aria-label="Pincode" inputMode="numeric" pattern="\d{6}" maxLength={6} title="6-digit pincode" value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))} placeholder="Pincode" required />
+            <select className="input" aria-label="Zone" value={zoneForPincode} onChange={(e) => setZoneForPincode(e.target.value)} required>
               <option value="">Select zone…</option>
               {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
             </select>
@@ -112,16 +118,16 @@ export default function Zones() {
                 <div style={{ fontWeight: 600 }}>{zone.name}</div>
                 <div className="text-soft" style={{ fontSize: 12.5 }}>{zone.agents?.length || 0} agent(s) based here</div>
               </div>
-              <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => handleDeleteZone(zone.id)}>Delete zone</button>
+              <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => handleDeleteZone(zone)}>Delete zone</button>
             </div>
             {zone.areas?.length === 0 ? (
               <p className="text-soft" style={{ fontSize: 13 }}>No pincodes mapped yet.</p>
             ) : (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {zone.areas.map((a) => (
-                  <span key={a.id} className="mono" style={{ fontSize: 12, background: "var(--paper-50)", padding: "4px 8px", borderRadius: 5, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span key={a.id} className="mono chip">
                     {a.pincode}
-                    <button onClick={() => handleRemoveArea(a.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--rust-500)", fontWeight: 700 }}>×</button>
+                    <button onClick={() => handleRemoveArea(a)} disabled={busy} aria-label={`Unmap pincode ${a.pincode}`} title="Unmap" className="chip-x">×</button>
                   </span>
                 ))}
               </div>

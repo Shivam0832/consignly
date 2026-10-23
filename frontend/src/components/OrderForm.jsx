@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { money, todayISO } from "../lib/orderStatus";
+
+const PINCODE_PROPS = { inputMode: "numeric", pattern: "\\d{6}", maxLength: 6, title: "6-digit pincode" };
 
 const initialForm = {
   customerEmail: "",
@@ -29,7 +32,7 @@ export default function OrderForm({ asAdmin = false }) {
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [autoAssign, setAutoAssign] = useState(true);
+  const [autoAssign, setAutoAssign] = useState(true); // admins only
 
   function set(k, v) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -63,12 +66,12 @@ export default function OrderForm({ asAdmin = false }) {
     setError("");
     setBusy(true);
     try {
-      const payload = { ...form, autoAssign };
       if (asAdmin && !form.customerEmail) {
         setError("Customer email is required");
-        setBusy(false);
         return;
       }
+      const payload = { ...form, autoAssign: asAdmin && autoAssign };
+      if (!asAdmin) delete payload.customerEmail;
       const data = await api.post("/orders", payload);
       navigate(`/orders/${data.order.id}`);
     } catch (err) {
@@ -81,55 +84,57 @@ export default function OrderForm({ asAdmin = false }) {
   return (
     <div className="grid grid-2" style={{ alignItems: "start" }}>
       <form className="card" onSubmit={handleQuote}>
-        {error && <div className="banner banner-error">{error}</div>}
+        {error && <div className="banner banner-error" role="alert">{error}</div>}
 
         {asAdmin && (
           <div className="field">
-            <label>Customer email</label>
-            <input type="email" value={form.customerEmail} onChange={(e) => set("customerEmail", e.target.value)} placeholder="customer@example.com" required />
+            <label htmlFor="f-cust">Customer email</label>
+            <input id="f-cust" type="email" value={form.customerEmail} onChange={(e) => set("customerEmail", e.target.value)} placeholder="customer@example.com" required />
           </div>
         )}
 
         <div className="field">
-          <label>Pickup address</label>
-          <textarea rows={2} value={form.pickupAddress} onChange={(e) => set("pickupAddress", e.target.value)} required />
+          <label htmlFor="f-paddr">Pickup address</label>
+          <textarea id="f-paddr" rows={2} value={form.pickupAddress} onChange={(e) => set("pickupAddress", e.target.value)} required />
         </div>
         <div className="field">
-          <label>Pickup pincode</label>
-          <input value={form.pickupPincode} onChange={(e) => set("pickupPincode", e.target.value)} placeholder="110001" required />
+          <label htmlFor="f-ppin">Pickup pincode</label>
+          <input id="f-ppin" {...PINCODE_PROPS} value={form.pickupPincode} onChange={(e) => set("pickupPincode", e.target.value.replace(/\D/g, ""))} placeholder="6 digits, e.g. 110001" required />
         </div>
 
         <div className="field">
-          <label>Drop address</label>
-          <textarea rows={2} value={form.dropAddress} onChange={(e) => set("dropAddress", e.target.value)} required />
+          <label htmlFor="f-daddr">Drop address</label>
+          <textarea id="f-daddr" rows={2} value={form.dropAddress} onChange={(e) => set("dropAddress", e.target.value)} required />
         </div>
         <div className="field">
-          <label>Drop pincode</label>
-          <input value={form.dropPincode} onChange={(e) => set("dropPincode", e.target.value)} placeholder="560001" required />
+          <label htmlFor="f-dpin">Drop pincode</label>
+          <input id="f-dpin" {...PINCODE_PROPS} value={form.dropPincode} onChange={(e) => set("dropPincode", e.target.value.replace(/\D/g, ""))} placeholder="6 digits, e.g. 560001" required />
         </div>
 
-        <label style={{ fontSize: 13, fontWeight: 600, color: "var(--paper-ink-soft)" }}>Package dimensions (cm) &amp; weight (kg)</label>
-        <div className="field-row" style={{ marginTop: 6, marginBottom: 16 }}>
-          <input type="number" min="0.1" step="0.1" value={form.lengthCm} onChange={(e) => set("lengthCm", e.target.value)} placeholder="Length" required />
-          <input type="number" min="0.1" step="0.1" value={form.breadthCm} onChange={(e) => set("breadthCm", e.target.value)} placeholder="Breadth" required />
-          <input type="number" min="0.1" step="0.1" value={form.heightCm} onChange={(e) => set("heightCm", e.target.value)} placeholder="Height" required />
-        </div>
+        <fieldset className="field">
+          <legend>Package dimensions (cm)</legend>
+          <div className="field-row">
+            <input type="number" min="0.1" step="0.1" inputMode="decimal" value={form.lengthCm} onChange={(e) => set("lengthCm", e.target.value)} placeholder="Length" aria-label="Length in cm" required />
+            <input type="number" min="0.1" step="0.1" inputMode="decimal" value={form.breadthCm} onChange={(e) => set("breadthCm", e.target.value)} placeholder="Breadth" aria-label="Breadth in cm" required />
+            <input type="number" min="0.1" step="0.1" inputMode="decimal" value={form.heightCm} onChange={(e) => set("heightCm", e.target.value)} placeholder="Height" aria-label="Height in cm" required />
+          </div>
+        </fieldset>
         <div className="field">
-          <label>Actual weight (kg)</label>
-          <input type="number" min="0.01" step="0.01" value={form.actualWeightKg} onChange={(e) => set("actualWeightKg", e.target.value)} required />
+          <label htmlFor="f-wt">Actual weight (kg)</label>
+          <input id="f-wt" type="number" min="0.01" step="0.01" value={form.actualWeightKg} onChange={(e) => set("actualWeightKg", e.target.value)} required />
         </div>
 
         <div className="field-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
           <div className="field">
-            <label>Order type</label>
-            <select value={form.orderType} onChange={(e) => set("orderType", e.target.value)}>
+            <label htmlFor="f-otype">Order type</label>
+            <select id="f-otype" value={form.orderType} onChange={(e) => set("orderType", e.target.value)}>
               <option value="B2C">B2C</option>
               <option value="B2B">B2B</option>
             </select>
           </div>
           <div className="field">
-            <label>Payment type</label>
-            <select value={form.paymentType} onChange={(e) => set("paymentType", e.target.value)}>
+            <label htmlFor="f-ptype">Payment type</label>
+            <select id="f-ptype" value={form.paymentType} onChange={(e) => set("paymentType", e.target.value)}>
               <option value="PREPAID">Prepaid</option>
               <option value="COD">Cash on Delivery</option>
             </select>
@@ -137,21 +142,23 @@ export default function OrderForm({ asAdmin = false }) {
         </div>
 
         <div className="field">
-          <label>Preferred delivery date (optional)</label>
-          <input type="date" value={form.scheduledDate} onChange={(e) => set("scheduledDate", e.target.value)} />
+          <label htmlFor="f-date">Preferred delivery date (optional)</label>
+          <input id="f-date" type="date" min={todayISO()} value={form.scheduledDate} onChange={(e) => set("scheduledDate", e.target.value)} />
         </div>
 
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, marginBottom: 16 }}>
-          <input type="checkbox" checked={autoAssign} onChange={(e) => setAutoAssign(e.target.checked)} style={{ width: "auto" }} />
-          Auto-assign nearest available agent immediately
-        </label>
+        {asAdmin && (
+          <label className="check-row">
+            <input type="checkbox" checked={autoAssign} onChange={(e) => setAutoAssign(e.target.checked)} />
+            Auto-assign the best available agent right away
+          </label>
+        )}
 
         <button className="btn btn-ghost btn-block" type="submit" disabled={busy}>
           {busy ? "Calculating…" : "Get price quote"}
         </button>
       </form>
 
-      <div className="card">
+      <div className="card quote-card" aria-live="polite">
         <div className="card-title">Price breakdown</div>
         {!quote ? (
           <p className="text-soft" style={{ fontSize: 13.5 }}>Fill in the form and click "Get price quote" to see the charge before placing the order.</p>
@@ -160,23 +167,23 @@ export default function OrderForm({ asAdmin = false }) {
             <div className="grid grid-2" style={{ fontSize: 13, marginBottom: 14 }}>
               <div><div className="stat-label">Pickup zone</div><p style={{ marginTop: 4 }}>{quote.pickupZone.name}</p></div>
               <div><div className="stat-label">Drop zone</div><p style={{ marginTop: 4 }}>{quote.dropZone.name}</p></div>
-              <div><div className="stat-label">Zone type</div><p style={{ marginTop: 4 }}>{quote.zoneType}</p></div>
+              <div><div className="stat-label">Zone type</div><p style={{ marginTop: 4 }}>{quote.zoneType === "INTRA" ? "Same zone" : "Across zones"}</p></div>
               <div><div className="stat-label">Billable weight</div><p style={{ marginTop: 4 }}>{quote.billableWeightKg} kg (volumetric: {quote.volumetricWeightKg} kg)</p></div>
             </div>
             <div className="divider" />
             <div className="flex-between" style={{ fontSize: 13.5 }}>
-              <span className="text-soft">Base charge</span><span className="mono">₹{quote.baseCharge}</span>
+              <span className="text-soft">Base charge</span><span className="mono">{money(quote.baseCharge)}</span>
             </div>
             <div className="flex-between" style={{ fontSize: 13.5, marginTop: 6 }}>
-              <span className="text-soft">Weight charge (₹{quote.rateCard.ratePerKg}/kg)</span><span className="mono">₹{quote.weightCharge}</span>
+              <span className="text-soft">Weight charge ({money(quote.rateCard.ratePerKg)}/kg)</span><span className="mono">{money(quote.weightCharge)}</span>
             </div>
             {quote.codSurcharge > 0 && (
               <div className="flex-between" style={{ fontSize: 13.5, marginTop: 6 }}>
-                <span className="text-soft">COD surcharge</span><span className="mono">₹{quote.codSurcharge}</span>
+                <span className="text-soft">COD surcharge</span><span className="mono">{money(quote.codSurcharge)}</span>
               </div>
             )}
             <div className="flex-between" style={{ fontSize: 17, marginTop: 12, fontWeight: 700 }}>
-              <span>Total</span><span className="mono">₹{quote.totalCharge}</span>
+              <span>Total</span><span className="mono">{money(quote.totalCharge)}</span>
             </div>
 
             <button className="btn btn-accent btn-block" style={{ marginTop: 20 }} disabled={busy} onClick={handleConfirm}>

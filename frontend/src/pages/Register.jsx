@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { BrandMark } from "../components/Layout";
 
 export default function Register() {
   const { register } = useAuth();
@@ -31,35 +32,32 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
-          <span className="sidebar-mark" style={{ width: 30, height: 30 }}>
-            <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
-              <path d="M20 65 L50 30 L80 65" stroke="#0d1526" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
+          <BrandMark />
           Consignly
         </div>
         <p className="text-soft" style={{ marginBottom: 16, fontSize: 13.5 }}>
           Create a customer account to place and track deliveries.
         </p>
 
-        {error && <div className="banner banner-error">{error}</div>}
+        {error && <div className="banner banner-error" role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label>Full name</label>
-            <input value={form.name} onChange={(e) => set("name", e.target.value)} required autoFocus />
+            <label htmlFor="r-name">Full name</label>
+            <input id="r-name" autoComplete="name" value={form.name} onChange={(e) => set("name", e.target.value)} required autoFocus />
           </div>
           <div className="field">
-            <label>Email</label>
-            <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required />
+            <label htmlFor="r-email">Email</label>
+            <input id="r-email" autoComplete="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required />
           </div>
           <div className="field">
-            <label>Phone</label>
-            <input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="9876543210" />
+            <label htmlFor="r-phone">Phone (for SMS updates)</label>
+            <input id="r-phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="9876543210" />
           </div>
           <div className="field">
-            <label>Password</label>
-            <input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} required minLength={6} />
+            <label htmlFor="r-pass">Password</label>
+            <input id="r-pass" type="password" autoComplete="new-password" value={form.password} onChange={(e) => set("password", e.target.value)} required minLength={8} />
+            <span className="field-hint">At least 8 characters.</span>
           </div>
           <button className="btn btn-accent btn-block" type="submit" disabled={busy}>
             {busy ? "Creating account…" : "Create account"}

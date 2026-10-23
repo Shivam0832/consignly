@@ -39,8 +39,22 @@ export default function Agents() {
     }
   }
 
+  async function changeZone(agent, homeZoneId) {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      await api.patch(`/admin/agents/${agent.id}/status`, { homeZoneId: homeZoneId || null });
+      setNotice(`${agent.name}'s home zone updated.`);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function toggleAvailability(agent) {
     setBusy(true);
+    setError("");
     try {
       await api.patch(`/admin/agents/${agent.id}/status`, { isAvailable: !agent.isAvailable });
       await load();
@@ -53,19 +67,19 @@ export default function Agents() {
 
   return (
     <Layout title="Delivery Agents" subtitle="Manage your agent workforce and their home zones">
-      {error && <div className="banner banner-error">{error}</div>}
+      {error && <div className="banner banner-error" role="alert">{error}</div>}
       {notice && <div className="banner banner-success">{notice}</div>}
 
       <form className="card" onSubmit={handleCreate} style={{ marginBottom: 20 }}>
         <div className="card-title">Add a new agent</div>
         <div className="grid grid-3">
-          <div className="field"><label>Name</label><input value={form.name} onChange={(e) => set("name", e.target.value)} required /></div>
-          <div className="field"><label>Email</label><input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required /></div>
-          <div className="field"><label>Phone</label><input value={form.phone} onChange={(e) => set("phone", e.target.value)} /></div>
-          <div className="field"><label>Password</label><input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} required minLength={6} /></div>
+          <div className="field"><label htmlFor="ag-name">Name</label><input id="ag-name" value={form.name} onChange={(e) => set("name", e.target.value)} required /></div>
+          <div className="field"><label htmlFor="ag-email">Email</label><input id="ag-email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required /></div>
+          <div className="field"><label htmlFor="ag-phone">Phone</label><input id="ag-phone" value={form.phone} onChange={(e) => set("phone", e.target.value)} /></div>
+          <div className="field"><label htmlFor="ag-password">Password</label><input id="ag-password" type="password" value={form.password} onChange={(e) => set("password", e.target.value)} required minLength={8} /></div>
           <div className="field">
-            <label>Home zone</label>
-            <select value={form.homeZoneId} onChange={(e) => set("homeZoneId", e.target.value)}>
+            <label htmlFor="ag-zone">Home zone</label>
+            <select id="ag-zone" value={form.homeZoneId} onChange={(e) => set("homeZoneId", e.target.value)}>
               <option value="">None</option>
               {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
             </select>
@@ -84,7 +98,12 @@ export default function Agents() {
               <tr key={a.id}>
                 <td>{a.name}</td>
                 <td>{a.email}</td>
-                <td>{a.homeZone?.name || <span className="text-soft">—</span>}</td>
+                <td>
+                  <select className="input input-sm" aria-label={`Home zone for ${a.name}`} value={a.homeZoneId || ""} disabled={busy} onChange={(e) => changeZone(a, e.target.value)}>
+                    <option value="">No zone</option>
+                    {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+                  </select>
+                </td>
                 <td>
                   <span className={`badge ${a.isAvailable ? "badge-teal" : "badge-rust"}`}>
                     <span className="badge-dot" />{a.isAvailable ? "Available" : "Unavailable"}
@@ -97,6 +116,9 @@ export default function Agents() {
                 </td>
               </tr>
             ))}
+            {agents.length === 0 && (
+              <tr><td colSpan={5} className="text-soft" style={{ textAlign: "center", padding: 24 }}>No agents yet — add one above.</td></tr>
+            )}
           </tbody>
         </table>
       </div>

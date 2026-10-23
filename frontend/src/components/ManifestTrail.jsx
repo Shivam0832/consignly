@@ -1,3 +1,5 @@
+import { label } from "../lib/orderStatus";
+
 export default function ManifestTrail({ history = [] }) {
   if (history.length === 0) {
     return <p className="text-soft" style={{ fontSize: 13.5 }}>No tracking events yet.</p>;
@@ -5,19 +7,19 @@ export default function ManifestTrail({ history = [] }) {
   const lastIndex = history.length - 1;
 
   return (
-    <div className="manifest-trail">
+    <ol className="manifest-trail">
       {history.map((h, i) => (
-        <div className="manifest-entry" key={h.id || i}>
+        <li className="manifest-entry" key={h.id || i}>
           <div className={`manifest-stamp ${i === lastIndex ? "is-current" : ""}`}>
             <div className="manifest-stamp-dot" />
           </div>
-          <div className="manifest-status">{h.status?.replace(/_/g, " ")}</div>
+          <div className="manifest-status">{label(h.status)}</div>
           <div className="manifest-meta">
-            {new Date(h.createdAt).toLocaleString()} · {h.actorRole}
+            {new Date(h.createdAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })} · {h.actorRole.toLowerCase()}
           </div>
           {h.note && <div className="manifest-note">{h.note}</div>}
-        </div>
+        </li>
       ))}
-    </div>
+    </ol>
   );
 }

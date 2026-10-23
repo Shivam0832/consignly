@@ -49,8 +49,8 @@ export default function RateCards() {
     try {
       await api.post("/rate-cards", {
         orderType, zoneType,
-        baseCharge: Number(values.baseCharge) || 0,
-        ratePerKg: Number(values.ratePerKg) || 0,
+        baseCharge: values.baseCharge === "" || values.baseCharge === undefined ? 0 : Number(values.baseCharge),
+        ratePerKg: values.ratePerKg === "" || values.ratePerKg === undefined ? "" : Number(values.ratePerKg),
       });
       setNotice(`Saved rate for ${orderType} / ${zoneType}.`);
       await load();
@@ -69,7 +69,7 @@ export default function RateCards() {
     const values = codForm[orderType] || { type: "FLAT", value: 0 };
     setBusy(true); setError(""); setNotice("");
     try {
-      await api.post("/rate-cards/cod-surcharge", { orderType, type: values.type, value: Number(values.value) || 0 });
+      await api.post("/rate-cards/cod-surcharge", { orderType, type: values.type, value: values.value === "" ? "" : Number(values.value) });
       setNotice(`Saved COD surcharge for ${orderType}.`);
       await load();
     } catch (err) {
@@ -81,7 +81,7 @@ export default function RateCards() {
 
   return (
     <Layout title="Rate Cards" subtitle="Every charge on the platform is computed from these numbers — nothing is hardcoded">
-      {error && <div className="banner banner-error">{error}</div>}
+      {error && <div className="banner banner-error" role="alert">{error}</div>}
       {notice && <div className="banner banner-success">{notice}</div>}
 
       <div className="grid grid-2">

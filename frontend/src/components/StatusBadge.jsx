@@ -1,3 +1,5 @@
+import { label } from "../lib/orderStatus";
+
 const STYLES = {
   PLACED: "badge-slate",
   ASSIGNED: "badge-amber",
@@ -15,7 +17,7 @@ export default function StatusBadge({ status }) {
   return (
     <span className={`badge ${cls}`}>
       <span className="badge-dot" />
-      {status?.replace(/_/g, " ")}
+      {label(status)}
     </span>
   );
 }
