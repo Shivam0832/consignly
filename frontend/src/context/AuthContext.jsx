@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { api } from "../api/client";
+import { api, TOKEN_KEY } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -7,8 +7,18 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Any API call that comes back 401 signs the user out cleanly.
   useEffect(() => {
-    const token = localStorage.getItem("lm_token");
+    const onExpired = () => {
+      localStorage.removeItem(TOKEN_KEY);
+      setUser(null);
+    };
+    window.addEventListener("auth:expired", onExpired);
+    return () => window.removeEventListener("auth:expired", onExpired);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
       setLoading(false);
       return;
@@ -17,27 +27,27 @@ export function AuthProvider({ children }) {
       .me()
       .then((data) => setUser(data.user))
       .catch(() => {
-        localStorage.removeItem("lm_token");
+        localStorage.removeItem(TOKEN_KEY);
       })
       .finally(() => setLoading(false));
   }, []);
 
   async function login(email, password) {
     const data = await api.login(email, password);
-    localStorage.setItem("lm_token", data.token);
+    localStorage.setItem(TOKEN_KEY, data.token);
     setUser(data.user);
     return data.user;
   }
 
   async function register(payload) {
     const data = await api.register(payload);
-    localStorage.setItem("lm_token", data.token);
+    localStorage.setItem(TOKEN_KEY, data.token);
     setUser(data.user);
     return data.user;
   }
 
   function logout() {
-    localStorage.removeItem("lm_token");
+    localStorage.removeItem(TOKEN_KEY);
     setUser(null);
   }
 

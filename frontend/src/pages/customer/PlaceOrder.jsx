@@ -3,7 +3,7 @@ import OrderForm from "../../components/OrderForm";
 
 export default function PlaceOrder() {
   return (
-    <Layout title="Place an Order" subtitle="Get an instant quote, then confirm to book your delivery">
+    <Layout title="Book a delivery" subtitle="The price updates as you fill in the details. Nothing is booked until you confirm.">
       <OrderForm />
     </Layout>
   );

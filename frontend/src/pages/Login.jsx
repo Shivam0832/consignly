@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import AuthShell from "../components/AuthShell";
+import PasswordInput from "../components/PasswordInput";
+import { homeFor } from "../components/nav";
+
+const DEMO = [
+  { role: "Admin", email: "admin@lastmile.com", what: "Dispatch & pricing" },
+  { role: "Agent", email: "agent1@lastmile.com", what: "Deliver parcels" },
+  { role: "Customer", email: "customer@lastmile.com", what: "Book & track" },
+];
 
 export default function Login() {
   const { login } = useAuth();
@@ -10,13 +19,13 @@ export default function Login() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function signIn(e, creds) {
+    e?.preventDefault();
     setError("");
     setBusy(true);
     try {
-      const user = await login(email, password);
-      navigate(user.role === "ADMIN" ? "/admin" : user.role === "AGENT" ? "/agent" : "/customer");
+      const user = await login(creds?.email ?? email, creds?.password ?? password);
+      navigate(homeFor(user.role));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -24,61 +33,40 @@ export default function Login() {
     }
   }
 
-  function fillDemo(role) {
-    const creds = {
-      admin: "admin@lastmile.com",
-      agent: "agent1@lastmile.com",
-      customer: "customer@lastmile.com",
-    };
-    setEmail(creds[role]);
-    setPassword("password123");
-  }
-
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-brand">
-          <span className="sidebar-mark" style={{ width: 30, height: 30 }}>
-            <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
-              <path d="M20 65 L50 30 L80 65" stroke="#0d1526" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-          Consignly
+    <AuthShell>
+      <h1>Welcome back</h1>
+      <p>Sign in to book, dispatch or deliver.</p>
+
+      {error && <div className="notice notice-bad" role="alert">{error}</div>}
+
+      <form onSubmit={signIn}>
+        <div className="field">
+          <label htmlFor="login-email">Email</label>
+          <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
         </div>
-
-        {error && <div className="banner banner-error">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="field">
-            <label>Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
-          </div>
-          <div className="field">
-            <label>Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
-          <button className="btn btn-accent btn-block" type="submit" disabled={busy}>
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-
-        <div className="auth-switch">
-          New customer? <Link to="/register">Create an account</Link>
+        <div className="field">
+          <label htmlFor="login-pass">Password</label>
+          <PasswordInput id="login-pass" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
+        <button className="btn btn-dark btn-lg btn-block" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+      </form>
 
-        <div className="demo-creds">
-          <strong>Demo logins</strong> (password: password123) — click to autofill:
-          <div>
-            <a onClick={() => fillDemo("admin")} style={{ cursor: "pointer" }}>admin@lastmile.com (Admin)</a>
-          </div>
-          <div>
-            <a onClick={() => fillDemo("agent")} style={{ cursor: "pointer" }}>agent1@lastmile.com (Agent)</a>
-          </div>
-          <div>
-            <a onClick={() => fillDemo("customer")} style={{ cursor: "pointer" }}>customer@lastmile.com (Customer)</a>
-          </div>
+      <p style={{ marginTop: 18, fontSize: 14 }} className="muted">
+        New here? <Link to="/register">Create a customer account</Link>
+      </p>
+
+      <div className="demo">
+        <div className="label">Try the demo in one click</div>
+        <div className="demo-list">
+          {DEMO.map((d) => (
+            <button key={d.email} type="button" disabled={busy} onClick={(e) => signIn(e, { email: d.email, password: "password123" })}>
+              <strong>{d.role}</strong>
+              <span>{d.what}</span>
+            </button>
+          ))}
         </div>
       </div>
-    </div>
+    </AuthShell>
   );
 }

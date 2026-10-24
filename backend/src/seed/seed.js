@@ -7,14 +7,22 @@ require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const { sequelize, Zone, Area, RateCard, CodSurcharge, User } = require("../models");
 
-async function upsertByWhere(Model, where, defaults) {
+async function upsertByWhere(Model, where, defaults, createOnly = {}) {
   let row = await Model.findOne({ where });
   if (row) {
     await row.update(defaults);
   } else {
-    row = await Model.create({ ...where, ...defaults });
+    row = await Model.create({ ...where, ...defaults, ...createOnly });
   }
   return row;
+}
+
+/**
+ * Demo users get the demo password only when first created. Re-running the
+ * seed (e.g. on every deploy) never resets a password someone has changed.
+ */
+function seedUser(email, fields, pass) {
+  return upsertByWhere(User, { email }, fields, { password: pass });
 }
 
 async function main() {
@@ -56,35 +64,19 @@ async function main() {
   // ---------- Users ----------
   const pass = await bcrypt.hash("password123", 10);
 
-  await upsertByWhere(
-    User,
-    { email: "admin@lastmile.com" },
-    { name: "Admin User", password: pass, role: "ADMIN", phone: "9000000001" }
-  );
+  await seedUser("admin@lastmile.com", { name: "Admin User", role: "ADMIN", phone: "9000000001" }, pass);
 
-  await upsertByWhere(
-    User,
-    { email: "agent1@lastmile.com" },
-    {
-      name: "Ravi Kumar", password: pass, role: "AGENT", phone: "9000000002",
-      homeZoneId: north.id, isAvailable: true, currentLat: 28.6139, currentLng: 77.209,
-    }
-  );
+  await seedUser("agent1@lastmile.com", {
+    name: "Ravi Kumar", role: "AGENT", phone: "9000000002",
+    homeZoneId: north.id, isAvailable: true, currentLat: 28.6139, currentLng: 77.209,
+  }, pass);
 
-  await upsertByWhere(
-    User,
-    { email: "agent2@lastmile.com" },
-    {
-      name: "Suresh Babu", password: pass, role: "AGENT", phone: "9000000003",
-      homeZoneId: south.id, isAvailable: true, currentLat: 12.9716, currentLng: 77.5946,
-    }
-  );
+  await seedUser("agent2@lastmile.com", {
+    name: "Suresh Babu", role: "AGENT", phone: "9000000003",
+    homeZoneId: south.id, isAvailable: true, currentLat: 12.9716, currentLng: 77.5946,
+  }, pass);
 
-  await upsertByWhere(
-    User,
-    { email: "customer@lastmile.com" },
-    { name: "Anita Sharma", password: pass, role: "CUSTOMER", phone: "9000000004" }
-  );
+  await seedUser("customer@lastmile.com", { name: "Anita Sharma", role: "CUSTOMER", phone: "9000000004" }, pass);
 
   console.log("Seed complete.");
   console.log("-----------------------------------------");

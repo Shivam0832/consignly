@@ -34,6 +34,12 @@ npm run seed                  # seeds zones, rate cards, and demo logins
 npm run dev                   # http://localhost:4000
 ```
 
+Run the API test suite (uses a throwaway SQLite file):
+
+```bash
+npm test
+```
+
 ### Frontend
 
 ```bash
@@ -84,16 +90,17 @@ The app is two independently-deployable services.
 2. Create a new **Web Service** pointing at `backend/`.
    - Build command: `npm install`
    - Start command: `npm run db:sync && npm run seed && npm start`
-     (drop `&& npm run seed` after the first deploy so it doesn't reseed —
-     or just run `db:sync`/`seed` once as a one-off shell command from the
-     platform's console instead of baking it into the start command).
+     (safe to keep: the seed only creates missing demo data and never resets
+     a password that has been changed).
    - Add environment variables from `.env.example`. For a real deployment,
      set:
      ```
      DB_DIALECT=postgres
      DATABASE_URL=<your managed Postgres URL>
      PG_SSL=true
-     JWT_SECRET=<a long random string>
+     JWT_SECRET=<a long random string>   # openssl rand -hex 32
+     NODE_ENV=production                  # refuses to boot with a weak secret
+     CORS_ORIGIN=https://your-frontend.vercel.app
      ```
      Render/Railway both offer a free/low-cost managed Postgres add-on —
      attach one and copy its connection string into `DATABASE_URL`.
@@ -228,12 +235,13 @@ require `Authorization: Bearer <token>`.
 |---|---|---|---|
 | POST | `/orders/calculate` | any authenticated | Price preview, no order created |
 | POST | `/orders` | CUSTOMER, ADMIN | Admin may pass `customerId` or `customerEmail` |
-| GET | `/orders?status=&zoneId=&agentId=&orderType=&paymentType=` | any | Role-scoped: customers see their own, agents see assigned, admin sees all + filters |
+| GET | `/orders?status=&zoneId=&agentId=&orderType=&paymentType=&q=&limit=&offset=` | any | Role-scoped: customers see their own, agents see assigned, admin sees all + filters. `q` searches order numbers; returns `{orders, total}` (default page 100, max 500) |
 | GET | `/orders/:id` | any (owner/assignee/admin) | Full detail incl. tracking history |
 | POST | `/orders/:id/assign` `{agentId}` | ADMIN | Manual assignment |
-| POST | `/orders/:id/auto-assign` | ADMIN | Nearest/least-loaded available agent |
+| POST | `/orders/:id/auto-assign` | ADMIN | Best available agent; only for `PLACED`/`RESCHEDULED` orders. Response includes `assignment` |
 | PATCH | `/orders/:id/status` `{status, note?, failureReason?}` | ADMIN, AGENT | Agent limited to legal transitions; admin can override to any status |
-| POST | `/orders/:id/reschedule` `{newDate, autoAssign?}` | CUSTOMER, ADMIN | Only valid on a `FAILED` order |
+| POST | `/orders/:id/reschedule` `{newDate, autoAssign?}` | CUSTOMER, ADMIN | Only valid on a `FAILED` order; `newDate` must be today or later. `assignment.assigned` says whether an agent was found |
+| POST | `/orders/:id/cancel` `{reason?}` | CUSTOMER, ADMIN | Customers: own order, before pickup. Admin: any open order |
 
 ### Admin
 | Method | Path | Access |
@@ -257,10 +265,12 @@ PLACED → ASSIGNED → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVE
 PLACED / ASSIGNED → CANCELLED (also reachable)
 ```
 
-Enforced in `backend/src/utils/constants.js` (`ALLOWED_TRANSITIONS`) and
+Enforced in `backend/src/utils/constants.js` (`AGENT_TRANSITIONS`) and
 checked in `orderController.updateStatus` — an agent's `PATCH .../status`
 call is rejected with `409` if it isn't a legal next step from the order's
-current status. **Admins bypass this map entirely** (the explicit "override
+current status. Agents only move parcels forward or mark an attempt failed;
+cancelling (`POST .../cancel`) and rescheduling (`POST .../reschedule`)
+have their own endpoints. **Admins bypass this map entirely** (the explicit "override
 any order status" requirement) — every transition, legal or overridden,
 still writes one row to `TrackingHistory` with a timestamp and the acting
 user, so the audit trail is complete either way. `TrackingHistory` rows are

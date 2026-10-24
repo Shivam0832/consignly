@@ -1,5 +1,5 @@
-// Central place for all "enum" values. Since the Prisma schema stores these
-// as validated strings (for SQLite/Postgres portability), every value used
+// Central place for all "enum" values. The Sequelize models store these
+// as plain strings (for SQLite/Postgres portability), so every value used
 // anywhere in the app must come from here — this is what "no hardcoding"
 // means in practice: change behavior by editing DB rows (rate cards, zones),
 // never by editing these lifecycle constants.
@@ -56,6 +56,22 @@ const ALLOWED_TRANSITIONS = Object.freeze({
   CANCELLED: [],
 });
 
+// What a delivery AGENT may do from each status. Narrower than the full
+// lifecycle above: agents move a parcel forward or mark an attempt failed,
+// but cancelling and rescheduling belong to the customer/admin flows.
+const AGENT_TRANSITIONS = Object.freeze({
+  ASSIGNED: ["PICKED_UP"],
+  PICKED_UP: ["IN_TRANSIT", "FAILED"],
+  IN_TRANSIT: ["OUT_FOR_DELIVERY", "FAILED"],
+  OUT_FOR_DELIVERY: ["DELIVERED", "FAILED"],
+});
+
+// Statuses from which an order can be (re)assigned to an agent.
+const ASSIGNABLE_STATUSES = Object.freeze(["PLACED", "RESCHEDULED"]);
+
+// Statuses from which a customer may cancel their own order (before pickup).
+const CUSTOMER_CANCELLABLE = Object.freeze(["PLACED", "ASSIGNED", "RESCHEDULED"]);
+
 const NOTIFICATION_CHANNELS = Object.freeze({
   EMAIL: "EMAIL",
   SMS: "SMS",
@@ -69,5 +85,8 @@ module.exports = {
   SURCHARGE_TYPES,
   ORDER_STATUS,
   ALLOWED_TRANSITIONS,
+  AGENT_TRANSITIONS,
+  ASSIGNABLE_STATUSES,
+  CUSTOMER_CANCELLABLE,
   NOTIFICATION_CHANNELS,
 };

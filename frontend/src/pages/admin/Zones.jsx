@@ -1,134 +1,95 @@
 import { useEffect, useState } from "react";
+import { Plus, Trash2, X, MapPinned } from "lucide-react";
 import Layout from "../../components/Layout";
+import Empty from "../../components/Empty";
+import { useToast } from "../../components/Toaster";
 import { api } from "../../api/client";
 
 export default function Zones() {
+  const toast = useToast();
   const [zones, setZones] = useState([]);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [newZoneName, setNewZoneName] = useState("");
-  const [pincode, setPincode] = useState("");
-  const [zoneForPincode, setZoneForPincode] = useState("");
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [zoneName, setZoneName] = useState("");
+  const [pins, setPins] = useState({}); // zoneId -> input text
 
   async function load() {
-    try {
-      const data = await api.get("/zones");
-      setZones(data.zones);
-    } catch (err) {
-      setError(err.message);
-    }
+    try { setZones((await api.get("/zones")).zones); } catch (err) { toast(err.message, "bad"); } finally { setLoading(false); }
   }
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
-  useEffect(() => { load(); }, []);
-
-  async function handleCreateZone(e) {
-    e.preventDefault();
-    setError(""); setNotice(""); setBusy(true);
-    try {
-      await api.post("/zones", { name: newZoneName });
-      setNewZoneName("");
-      setNotice("Zone created.");
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleAssignArea(e) {
-    e.preventDefault();
-    setError(""); setNotice(""); setBusy(true);
-    try {
-      await api.post("/zones/areas", { pincode, zoneId: zoneForPincode });
-      setPincode("");
-      setNotice(`Pincode ${pincode} mapped.`);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleRemoveArea(id) {
+  async function run(fn, msg) {
     setBusy(true);
-    try {
-      await api.del(`/zones/areas/${id}`);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
+    try { await fn(); if (msg) toast(msg); await load(); } catch (err) { toast(err.message, "bad"); } finally { setBusy(false); }
   }
 
-  async function handleDeleteZone(id) {
-    setBusy(true);
-    setError("");
-    try {
-      await api.del(`/zones/${id}`);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const createZone = (e) => {
+    e.preventDefault();
+    run(async () => { await api.post("/zones", { name: zoneName }); setZoneName(""); }, `${zoneName} created. Add its pincodes next.`);
+  };
+
+  // Accepts several pincodes at once: "110001, 110002 110003"
+  const addPins = (zone) => (e) => {
+    e.preventDefault();
+    const list = (pins[zone.id] || "").split(/[\s,]+/).filter(Boolean);
+    const bad = list.filter((p) => !/^\d{6}$/.test(p));
+    if (!list.length) return;
+    if (bad.length) return toast(`Not a 6-digit pincode: ${bad.join(", ")}`, "bad");
+    run(async () => {
+      for (const pincode of list) await api.post("/zones/areas", { pincode, zoneId: zone.id });
+      setPins((p) => ({ ...p, [zone.id]: "" }));
+    }, `${list.length} pincode${list.length === 1 ? "" : "s"} added to ${zone.name}.`);
+  };
+
+  const removePin = (a) => {
+    if (!window.confirm(`Remove pincode ${a.pincode}? Orders to it can't be priced until it's added to a zone again.`)) return;
+    run(() => api.del(`/zones/areas/${a.id}`), `${a.pincode} removed.`);
+  };
+  const removeZone = (z) => {
+    if (!window.confirm(`Delete ${z.name}?`)) return;
+    run(() => api.del(`/zones/${z.id}`), `${z.name} deleted.`);
+  };
 
   return (
-    <Layout title="Zones & Areas" subtitle="Define delivery zones and map pincodes to them — this drives zone detection for every order">
-      {error && <div className="banner banner-error">{error}</div>}
-      {notice && <div className="banner banner-success">{notice}</div>}
-
-      <div className="grid grid-2" style={{ alignItems: "start", marginBottom: 20 }}>
-        <form className="card" onSubmit={handleCreateZone}>
-          <div className="card-title">Create a zone</div>
-          <div className="flex gap-2">
-            <input value={newZoneName} onChange={(e) => setNewZoneName(e.target.value)} placeholder="e.g. West Zone" required style={{ flex: 1, padding: 10, borderRadius: 6, border: "1.5px solid var(--paper-100)" }} />
-            <button className="btn btn-accent btn-sm" type="submit" disabled={busy}>Create</button>
-          </div>
+    <Layout
+      title="Zones & pincodes"
+      subtitle="Every pincode belongs to one zone. The zone pair decides the price: same zone or across zones."
+      actions={
+        <form className="input-group" onSubmit={createZone}>
+          <label htmlFor="zone-name" className="sr-only">New zone name</label>
+          <input id="zone-name" className="input" placeholder="New zone, e.g. West Zone" value={zoneName} onChange={(e) => setZoneName(e.target.value)} required style={{ width: 230 }} />
+          <button className="btn btn-dark" disabled={busy}><Plus aria-hidden="true" />Add zone</button>
         </form>
-
-        <form className="card" onSubmit={handleAssignArea}>
-          <div className="card-title">Map a pincode to a zone</div>
-          <div className="flex gap-2">
-            <input value={pincode} onChange={(e) => setPincode(e.target.value)} placeholder="Pincode" required style={{ width: 130, padding: 10, borderRadius: 6, border: "1.5px solid var(--paper-100)" }} />
-            <select value={zoneForPincode} onChange={(e) => setZoneForPincode(e.target.value)} required style={{ flex: 1, padding: 10, borderRadius: 6, border: "1.5px solid var(--paper-100)" }}>
-              <option value="">Select zone…</option>
-              {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
-            </select>
-            <button className="btn btn-accent btn-sm" type="submit" disabled={busy}>Map</button>
-          </div>
-        </form>
-      </div>
-
-      <div className="grid grid-2" style={{ alignItems: "start" }}>
-        {zones.map((zone) => (
-          <div className="card" key={zone.id}>
-            <div className="flex-between" style={{ marginBottom: 12 }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>{zone.name}</div>
-                <div className="text-soft" style={{ fontSize: 12.5 }}>{zone.agents?.length || 0} agent(s) based here</div>
+      }
+    >
+      {loading ? <div className="cols-2">{[0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 180, borderRadius: 16 }} />)}</div> : zones.length === 0 ? (
+        <div className="card"><Empty title="No zones yet">Create a zone, then add the pincodes it covers.</Empty></div>
+      ) : (
+        <div className="cols-2">
+          {zones.map((z) => (
+            <section key={z.id} className="card zone-card">
+              <div className="row-between" style={{ marginBottom: 4 }}>
+                <h3 className="row"><MapPinned size={18} style={{ color: "var(--route)" }} aria-hidden="true" />{z.name}</h3>
+                <button className="btn btn-quiet btn-sm btn-icon" onClick={() => removeZone(z)} disabled={busy} aria-label={`Delete ${z.name}`} title="Delete zone"><Trash2 aria-hidden="true" /></button>
               </div>
-              <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => handleDeleteZone(zone.id)}>Delete zone</button>
-            </div>
-            {zone.areas?.length === 0 ? (
-              <p className="text-soft" style={{ fontSize: 13 }}>No pincodes mapped yet.</p>
-            ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {zone.areas.map((a) => (
-                  <span key={a.id} className="mono" style={{ fontSize: 12, background: "var(--paper-50)", padding: "4px 8px", borderRadius: 5, display: "flex", alignItems: "center", gap: 6 }}>
-                    {a.pincode}
-                    <button onClick={() => handleRemoveArea(a.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--rust-500)", fontWeight: 700 }}>×</button>
-                  </span>
+              <p className="muted" style={{ fontSize: 13, marginBottom: 14 }}>
+                {z.areas?.length || 0} pincode{z.areas?.length === 1 ? "" : "s"}, {z.agents?.length || 0} agent{z.agents?.length === 1 ? "" : "s"} based here
+              </p>
+              <div className="chips" style={{ marginBottom: 14 }}>
+                {z.areas?.map((a) => (
+                  <span key={a.id} className="chip code">{a.pincode}<button onClick={() => removePin(a)} disabled={busy} aria-label={`Remove ${a.pincode}`}><X /></button></span>
                 ))}
+                {!z.areas?.length && <span className="muted" style={{ fontSize: 13 }}>No pincodes yet.</span>}
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+              <form className="input-group" onSubmit={addPins(z)}>
+                <label htmlFor={`pins-${z.id}`} className="sr-only">Add pincodes to {z.name}</label>
+                <input id={`pins-${z.id}`} className="input input-sm input-code" placeholder="Add pincodes, comma separated" inputMode="numeric" value={pins[z.id] || ""} onChange={(e) => setPins((p) => ({ ...p, [z.id]: e.target.value }))} />
+                <button className="btn btn-ghost btn-sm" disabled={busy}>Add</button>
+              </form>
+            </section>
+          ))}
+        </div>
+      )}
     </Layout>
   );
 }

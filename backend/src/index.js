@@ -4,6 +4,16 @@ const { sequelize } = require("./models");
 
 const PORT = process.env.PORT || 4000;
 
+const WEAK_SECRETS = ["", "change-this-to-a-long-random-string"];
+if (WEAK_SECRETS.includes(process.env.JWT_SECRET || "") || (process.env.JWT_SECRET || "").length < 16) {
+  if (process.env.NODE_ENV === "production") {
+    console.error("JWT_SECRET is missing or weak. Set a long random value (e.g. `openssl rand -hex 32`) and restart.");
+    process.exit(1);
+  }
+  console.warn("[WARN] JWT_SECRET is missing or the example value — fine for local dev, never for a deployment.");
+  if (!process.env.JWT_SECRET) process.env.JWT_SECRET = require("crypto").randomBytes(32).toString("hex");
+}
+
 async function start() {
   try {
     await sequelize.authenticate();

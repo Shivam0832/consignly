@@ -1,21 +1,5 @@
-const STYLES = {
-  PLACED: "badge-slate",
-  ASSIGNED: "badge-amber",
-  PICKED_UP: "badge-amber",
-  IN_TRANSIT: "badge-amber",
-  OUT_FOR_DELIVERY: "badge-amber",
-  DELIVERED: "badge-teal",
-  FAILED: "badge-rust",
-  RESCHEDULED: "badge-slate",
-  CANCELLED: "badge-rust",
-};
+import { TONE, label } from "../lib/orderStatus";
 
 export default function StatusBadge({ status }) {
-  const cls = STYLES[status] || "badge-slate";
-  return (
-    <span className={`badge ${cls}`}>
-      <span className="badge-dot" />
-      {status?.replace(/_/g, " ")}
-    </span>
-  );
+  return <span className={`badge tone-${TONE[status] || "wait"}`}>{label(status)}</span>;
 }
